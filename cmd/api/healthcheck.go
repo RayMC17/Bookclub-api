@@ -13,10 +13,12 @@ import (
 //		fmt.Fprintf(w, "version: %s\n", appVersion)
 //	}
 func (a *applicationDependencies) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	data := map[string]string{
-		"status":      "available",
-		"environment": a.config.environment,
-		"version":     appVersion,
+	data := envelope {
+		"status": "available",
+		"system_info": map[string]string{
+			"environment": a.config.environment,
+			"version":     appVersion,
+		},
 	}
 	jsResponse, err := json.Marshal(data)
 	if err != nil {

@@ -5,11 +5,11 @@ import (
 	"net/http"
 )
 
-func (a *applicationDependencies)writeJSON(w http.ResponseWriter, status int, data any, headers http.Header) error {
+type envelope map[string]any
+
+func (a *applicationDependencies) writeJSON(w http.ResponseWriter, status int, data envelope, headers http.Header) error {
 	jsResponse, err := json.MarshalIndent(data, "", "\t")
-	if err != nil {
-		return err
-	}
+
 	jsResponse = append(jsResponse, '\n')
 	for key, value := range headers {
 		w.Header()[key] = value
