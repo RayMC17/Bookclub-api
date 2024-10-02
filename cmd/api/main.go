@@ -38,7 +38,7 @@ func main() {
 	router.HandleFunc("/v1/healthcheck", appInstance.healthCheckHandler)
 	apiServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", settings.port),
-		Handler:      router,
+		Handler:      appInstance.routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,

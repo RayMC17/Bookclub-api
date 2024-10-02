@@ -30,7 +30,7 @@ func (a *applicationDependencies)serverErrorResponse(w http.ResponseWriter, r *h
 	a.errorResponseJSON(w, r, http.StatusInternalServerError, message)
 }
 
-func  (a * applicationDependencies)notDoundResponse(w http.ResponseWriter, r *http.Request) {
+func  (a * applicationDependencies)notFoundResponse(w http.ResponseWriter, r *http.Request) {
 	
 	message := "the requested resource could not be found"
 	a.errorResponseJSON(w, r, http.StatusNotFound, message)
