@@ -17,7 +17,7 @@ func (a *applicationDependencies)createCommentHandler(w http.ResponseWriter, r *
 	err := a.readJSON(w, r, &incomingData)
 if err != nil {
 	a.badRequestResponse(w, r, err)
-	a.errorResponseJSON(w, r, http.StatusBadRequest, err.Error())
+	//a.errorResponseJSON(w, r, http.StatusBadRequest, err.Error())
 return
 }
 fmt.Fprintf(w, "%+v\n", incomingData)
