@@ -3,10 +3,13 @@ package data
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/RayMC17/comments/internal/validator"
 )
+
+var ErrRecordNotFound = errors.New("record not found")
 
 type Comment struct {
 	//DB        *sql.DB
@@ -18,7 +21,7 @@ type Comment struct {
 }
 
 type CommentModel struct {
-    DB *sql.DB
+	DB *sql.DB
 }
 
 func ValidateComment(v *validator.Validator, comment *Comment) {
@@ -52,4 +55,31 @@ func (c CommentModel) Insert(comment *Comment) error {
 	// to update the Comment struct later on
 	return c.DB.QueryRowContext(ctx, query, args...).Scan(&comment.ID, &comment.CreatedAt, &comment.Version)
 
+}
+
+func (c CommentModel) Get(id int64) (*Comment, error) {
+	if id < 1 {
+		return nil, ErrRecordNotFound
+	}
+
+	query := `
+         SELECT id, created_at, content, author, version
+		 FROM comments
+		 WHERE id = $1
+		 `
+
+	var comment Comment
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := c.DB.QueryRowContext(ctx, query, id).Scan(&comment.ID, &comment.CreatedAt, &comment.Content, &comment.Author, &comment.Version)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+	return &comment, nil
 }

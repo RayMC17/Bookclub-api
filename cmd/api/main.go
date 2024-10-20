@@ -53,8 +53,9 @@ func main() {
 		logger:       logger,
 		commentModel: data.CommentModel{DB: db},
 	}
-	router := http.NewServeMux()
-	router.HandleFunc("/v1/healthcheck", appInstance.healthCheckHandler)
+	//router := http.NewServeMux()
+	//router.HandleFunc("/v1/healthcheck", appInstance.healthCheckHandler)
+
 	apiServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", settings.port),
 		Handler:      appInstance.routes(),
