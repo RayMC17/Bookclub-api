@@ -35,7 +35,7 @@ func ValidateComment(v *validator.Validator, comment *Comment) {
 	v.Check(len(comment.Author) <= 25, "author", "must not be more than 25 bytes long")
 
 }
-
+//SOMETHING IS WRONG WITH THE INSERT FUNCTION
 // Expects a pointer to the actual comment
 func (c CommentModel) Insert(comment *Comment) error {
 	// the SQL query to be executed against the database table
@@ -83,3 +83,22 @@ func (c CommentModel) Get(id int64) (*Comment, error) {
 	}
 	return &comment, nil
 }
+
+func (c CommentModel) Update(comment *Comment) error {
+	// The SQL query to be executed against the database table
+	// Every time we make an update, we increment the version number
+		query := `
+			UPDATE comments
+			SET content = $1, author = $2, version = version + 1
+			WHERE id = $3
+			RETURNING version
+		  `
+		  args := []any{comment.Content, comment.Author, comment.ID}
+		  ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
+		  defer cancel()
+	   
+		  return c.DB.QueryRowContext(ctx, query, args...).Scan(&comment.Version)
+													 
+	   }
+
+	   

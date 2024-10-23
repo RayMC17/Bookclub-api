@@ -36,7 +36,7 @@ func (a *applicationDependencies) writeJSON(w http.ResponseWriter, status int, d
 }
 
 func (a *applicationDependencies) readJSON(w http.ResponseWriter, r *http.Request, destination any) error {
-	maxBytes := 25
+	maxBytes := 250
 	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))
 	dec := json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
@@ -72,9 +72,6 @@ func (a *applicationDependencies) readJSON(w http.ResponseWriter, r *http.Reques
 
 		case errors.As(err, &maxBytesError):
 			return fmt.Errorf("the body must not be larger that %d bytes", maxBytesError.Limit)
-
-		// case errors.Is(err, io.EOF):
-		// 	return errors.New("the body must not be empty")
 
 		// the programmer messed up
 		case errors.As(err, &invalidUnmarshalError):
