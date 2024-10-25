@@ -144,3 +144,47 @@ func (a *applicationDependencies) updateCommentHandler(w http.ResponseWriter, r 
 		return
 	}
 }
+
+func (a *applicationDependencies) deleteCommentHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := a.readIDParam(r)
+	if err != nil {
+		a.notFoundResponse(w, r)
+		return
+	}
+	err = a.commentModel.Delete(id)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			a.notFoundResponse(w, r)
+		default:
+			a.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+	// display the comment
+	data := envelope{
+		"message": "comment successfully deleted",
+	}
+	err = a.writeJSON(w, http.StatusOK, data, nil)
+	if err != nil {
+		a.serverErrorResponse(w, r, err)
+	}
+
+}
+
+func (a *applicationDependencies) listCommentsHandler(w http.ResponseWriter, r *http.Request) {
+	comments, err := a.commentModel.GetAll()
+	if err != nil {
+		a.serverErrorResponse(w, r, err)
+		return
+	}
+
+	data := envelope{
+		"comments": comments,
+	}
+	err = a.writeJSON(w, http.StatusOK, data, nil)
+	if err != nil {
+		a.serverErrorResponse(w, r, err)
+	}
+}

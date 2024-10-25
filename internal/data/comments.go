@@ -35,7 +35,8 @@ func ValidateComment(v *validator.Validator, comment *Comment) {
 	v.Check(len(comment.Author) <= 25, "author", "must not be more than 25 bytes long")
 
 }
-//SOMETHING IS WRONG WITH THE INSERT FUNCTION
+
+// SOMETHING IS WRONG WITH THE INSERT FUNCTION
 // Expects a pointer to the actual comment
 func (c CommentModel) Insert(comment *Comment) error {
 	// the SQL query to be executed against the database table
@@ -87,18 +88,100 @@ func (c CommentModel) Get(id int64) (*Comment, error) {
 func (c CommentModel) Update(comment *Comment) error {
 	// The SQL query to be executed against the database table
 	// Every time we make an update, we increment the version number
-		query := `
+	query := `
 			UPDATE comments
 			SET content = $1, author = $2, version = version + 1
 			WHERE id = $3
 			RETURNING version
 		  `
-		  args := []any{comment.Content, comment.Author, comment.ID}
-		  ctx, cancel := context.WithTimeout(context.Background(), 3 * time.Second)
-		  defer cancel()
-	   
-		  return c.DB.QueryRowContext(ctx, query, args...).Scan(&comment.Version)
-													 
-	   }
+	args := []any{comment.Content, comment.Author, comment.ID}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-	   
+	return c.DB.QueryRowContext(ctx, query, args...).Scan(&comment.Version)
+
+}
+
+// Delete a specific Comment from the comments table
+func (c CommentModel) Delete(id int64) error {
+
+	// check if the id is valid
+	if id < 1 {
+		return ErrRecordNotFound
+	}
+	// the SQL query to be executed against the database table
+	query := `
+        DELETE FROM comments
+        WHERE id = $1
+      `
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// ExecContext does not return any rows unlike QueryRowContext.
+	// It only returns  information about the the query execution
+	// such as how many rows were affected
+	result, err := c.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	// Were any rows  delete?
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	// Probably a wrong id was provided or the client is trying to
+	// delete an already deleted comment
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+
+	return nil
+
+}
+
+// Get all comments
+func (c CommentModel) GetAll() ([]*Comment, error) {
+
+	// the SQL query to be executed against the database table
+	query := `
+			SELECT id, created_at, content, author, version
+			FROM comments
+			ORDER BY id
+		  `
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// QueryContext returns multiple rows.
+	rows, err := c.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	// clean up the memory that was used
+	defer rows.Close()
+	// we will store the address of each comment in our slice
+	comments := []*Comment{}
+	for rows.Next() {
+		var comment Comment
+		err := rows.Scan(&comment.ID,
+			&comment.CreatedAt,
+			&comment.Content,
+			&comment.Author,
+			&comment.Version,
+		)
+		if err != nil {
+			return nil, err
+		}
+		// add the row to our slice
+		comments = append(comments, &comment)
+	} // end of for loop
+	// after we exit the loop we need to check if it generated any errors
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return comments, nil
+
+}
