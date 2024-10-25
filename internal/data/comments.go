@@ -141,19 +141,24 @@ func (c CommentModel) Delete(id int64) error {
 }
 
 // Get all comments
-func (c CommentModel) GetAll() ([]*Comment, error) {
+func (c CommentModel) GetAll(content string, author string)([]*Comment, error) {
 
 	// the SQL query to be executed against the database table
-	query := `
-			SELECT id, created_at, content, author, version
-			FROM comments
-			ORDER BY id
-		  `
+    query := `
+        SELECT id, created_at, content, author, version
+        FROM comments
+        WHERE (to_tsvector('simple', content) @@
+              plainto_tsquery('simple', $1) OR $1 = '') 
+        AND (to_tsvector('simple', author) @@ 
+             plainto_tsquery('simple', $2) OR $2 = '') 
+        ORDER BY id  
+     `
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	// QueryContext returns multiple rows.
-	rows, err := c.DB.QueryContext(ctx, query)
+	rows, err := c.DB.QueryContext(ctx, query, content, author)
 	if err != nil {
 		return nil, err
 	}
