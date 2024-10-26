@@ -192,19 +192,19 @@ func (a *applicationDependencies) listCommentsHandler(w http.ResponseWriter, r *
 		queryParameters,
 		"author",
 		"")
-		v := validator.New()
+	v := validator.New()
 
-		queryParametersData.Filters.Page = a.getSingleIntegerParameter(queryParameters, "page", 1, v)
-		queryParametersData.Filters.PageSize = a.getSingleIntegerParameter(queryParameters, "page_size", 10, v)
+	queryParametersData.Filters.Page = a.getSingleIntegerParameter(queryParameters, "page", 1, v)
+	queryParametersData.Filters.PageSize = a.getSingleIntegerParameter(queryParameters, "page_size", 10, v)
 
-// Check if our filters are valid
-data.ValidateFilters(v, queryParametersData.Filters)
+	// Check if our filters are valid
+	data.ValidateFilters(v, queryParametersData.Filters)
 	if !v.IsEmpty() {
-			a.failedValidationResponse(w, r, v.Errors)
-			return
-		}
+		a.failedValidationResponse(w, r, v.Errors)
+		return
+	}
 
-	comments, err := a.commentModel.GetAll(
+	comments, metadata, err := a.commentModel.GetAll(
 		queryParametersData.Content,
 		queryParametersData.Author,
 		queryParametersData.Filters,
@@ -214,7 +214,8 @@ data.ValidateFilters(v, queryParametersData.Filters)
 		return
 	}
 	data := envelope{
-		"comments": comments,
+		"comments":  comments,
+		"@metadata": metadata,
 	}
 	err = a.writeJSON(w, http.StatusOK, data, nil)
 	if err != nil {
