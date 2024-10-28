@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/RayMC17/comments/internal/validator"
@@ -144,16 +145,15 @@ func (c CommentModel) Delete(id int64) error {
 func (c CommentModel) GetAll(content string, author string, filters Filters) ([]*Comment, Metadata, error) {
 
 	// the SQL query to be executed against the database table
-	query := `
+	query := fmt.Sprintf(`
         SELECT COUNT(*) OVER(), id, created_at, content, author, version
         FROM comments
         WHERE (to_tsvector('simple', content) @@
               plainto_tsquery('simple', $1) OR $1 = '') 
         AND (to_tsvector('simple', author) @@ 
              plainto_tsquery('simple', $2) OR $2 = '') 
-        ORDER BY id  
-		LIMIT $3 OFFSET $4
-     `
+        ORDER BY %s %s, id  ASC
+		LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
