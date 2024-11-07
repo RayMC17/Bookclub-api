@@ -23,5 +23,6 @@ func (a *applicationDependencies) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/v1/comments", a.listCommentsHandler)
 
 	return a.recoverPanic(router)
+	return a.recoverPanic(a.rateLimit(router))
 
 }
