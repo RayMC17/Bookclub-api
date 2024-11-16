@@ -6,7 +6,9 @@ import (
 	"net/http"
 )
 
-var ErrNoRecord = errors.New("record not found")
+var (
+	ErrNoRecord = errors.New("record not found")
+)
 
 // logError is a helper function for logging errors.
 func (a *applicationDependencies) logError(r *http.Request, err error) {

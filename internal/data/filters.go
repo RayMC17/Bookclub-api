@@ -1,79 +1,76 @@
 package data
 
 import (
-	 "strings"
-	"github.com/RayMC17/comments/internal/validator"
+	"strings"
+	"github.com/RayMC17/bookclub-api/internal/validator" // Update the path according to your module path
 )
 
-// The Filters type will contain the fields related to pagination
-// and eventually the fields related to sorting.
+// Filters contains fields related to pagination and sorting.
 type Filters struct {
-	Page         int // which page number does the client want
-	PageSize     int // how records per page
+	Page         int
+	PageSize     int
 	Sort         string
-	SortSafeList []string
+	SortSafelist []string
 }
 
-// Next we validate page and PageSize
-// We follow the same approach that we used to validate a Comment
-func ValidateFilters(v *validator.Validator, f Filters) {
+// ValidateFilters validates the filters used for pagination and sorting.
+func ValidateFilters(v *validator.Validator, f *Filters) {
+	// Check that the page and PageSize are positive values.
 	v.Check(f.Page > 0, "page", "must be greater than zero")
-	v.Check(f.Page <= 500, "page", "must be a maximum of 500")
 	v.Check(f.PageSize > 0, "page_size", "must be greater than zero")
-	v.Check(f.PageSize <= 100, "page_size", "must be a maximum of 100")
+	v.Check(f.PageSize <= 100, "page_size", "must not be more than 100")
 
-	v.Check(validator.PermittedValue(f.Sort, f.SortSafeList...), "sort", "invalid sort value")
+	// Check if the sort value is in the safelist.
+	v.Check(validator.In(f.Sort, f.SortSafelist...), "sort", "invalid sort value")
 }
 
-// calculate how many records to send back
-func (f Filters) limit() int {
+// Limit returns the number of records to return based on PageSize.
+func (f *Filters) Limit() int {
 	return f.PageSize
 }
 
-// calculate the offset so that we remember how many records have
-// been sent and how many remain to be sent
-func (f Filters) offset() int {
+// Offset calculates the number of records to skip based on Page and PageSize.
+func (f *Filters) Offset() int {
 	return (f.Page - 1) * f.PageSize
 }
 
-type Metadata struct {
-	CurrentPage  int `json:"current_page,omitempty"`
-	PageSize     int `json:"page_size,omitempty"`
-	FirstPage    int `json:"first_page,omitempty"`
-	LastPage     int `json:"last_page,omitempty"`
-	TotalRecords int `json:"total_records,omitempty"`
+// SortColumn returns the column name for sorting if it exists in the safelist.
+func (f *Filters) SortColumn() string {
+	for _, safeValue := range f.SortSafelist {
+		if f.Sort == safeValue {
+			return strings.TrimPrefix(f.Sort, "-")
+		}
+	}
+	// Default sorting column if none matches
+	return "id"
 }
 
-func calculateMetaData(totalRecords int, currentPage int, pageSize int) Metadata {
+// SortDirection returns "ASC" for ascending sort or "DESC" for descending sort.
+func (f *Filters) SortDirection() string {
+	if strings.HasPrefix(f.Sort, "-") {
+		return "DESC"
+	}
+	return "ASC"
+}
+
+// Metadata holds information about pagination.
+type Metadata struct {
+	CurrentPage  int `json:"current_page"`
+	PageSize     int `json:"page_size"`
+	TotalRecords int `json:"total_records"`
+	TotalPages   int `json:"total_pages"`
+}
+
+// CalculateMetadata calculates pagination metadata.
+func CalculateMetadata(totalRecords, page, pageSize int) Metadata {
 	if totalRecords == 0 {
 		return Metadata{}
 	}
 
 	return Metadata{
-		CurrentPage:  currentPage,
+		CurrentPage:  page,
 		PageSize:     pageSize,
-		FirstPage:    1,
-		LastPage:     (totalRecords + pageSize - 1) / pageSize,
 		TotalRecords: totalRecords,
+		TotalPages:   (totalRecords + pageSize - 1) / pageSize,
 	}
-
-}
-
-// Implement the sorting feature
-func (f Filters) sortColumn() string {
-    for _, safeValue := range f.SortSafeList {
-        if f.Sort == safeValue {
-            return strings.TrimPrefix(f.Sort, "-")
-        }
-    }
-   // don't allow the operation to continue
-   // if case of SQL injection attack
-   panic("unsafe sort parameter: " + f.Sort)
-}
-
-func (f Filters) sortDirection() string {
-    if strings.HasPrefix(f.Sort, "-") {
-        return "DESC"
-    }
-    return "ASC"
 }

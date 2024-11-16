@@ -1,47 +1,71 @@
 package validator
 
 import (
-	"slices"
+	"regexp"
 )
 
-// // Filename: internal/validator/validator.go
-// package validator
-
-// We will create a new type named Validator
+// Validator struct holds validation errors.
 type Validator struct {
 	Errors map[string]string
 }
 
-// Construct a new Validator and return a pointer to it
-// All validation errors go into this one Validator instance
+// New creates a new Validator instance.
 func New() *Validator {
-	return &Validator{
-		Errors: make(map[string]string),
-	}
+	return &Validator{Errors: make(map[string]string)}
 }
 
-// Let's check  to see if the Validator's map contains any entries
-func (v *Validator) IsEmpty() bool {
+// Valid checks if the validator contains any errors.
+func (v *Validator) Valid() bool {
 	return len(v.Errors) == 0
 }
 
-// Add a new error entry to the Validator's error map
-// Check first if an entry with the same key does not already exist
-func (v *Validator) AddError(key string, message string) {
-	_, exists := v.Errors[key]
-	if !exists {
+// AddError adds an error message for a given field if it doesn't already exist.
+func (v *Validator) AddError(key, message string) {
+	if _, exists := v.Errors[key]; !exists {
 		v.Errors[key] = message
 	}
 }
 
-// make an entry into our Validator's error map
-func (v *Validator) Check(acceptable bool, key string, message string) {
-	if !acceptable {
+// Check adds an error message if a condition is not met.
+func (v *Validator) Check(ok bool, key, message string) {
+	if !ok {
 		v.AddError(key, message)
 	}
 }
 
-// Check for permitted values
-func PermittedValue(value string, permittedValues ...string) bool {
-	return slices.Contains(permittedValues, value)
+// In checks if a value exists in a list of permitted values.
+func In(value string, list ...string) bool {
+	for _, item := range list {
+		if value == item {
+			return true
+		}
+	}
+	return false
+}
+
+// Matches checks if a value matches a given regular expression pattern.
+func Matches(value string, rx *regexp.Regexp) bool {
+	return rx.MatchString(value)
+}
+
+// MinLength checks if a value has a minimum length.
+func MinLength(value string, min int) bool {
+	return len(value) >= min
+}
+
+// MaxLength checks if a value does not exceed a maximum length.
+func MaxLength(value string, max int) bool {
+	return len(value) <= max
+}
+
+// Unique checks if all values in a slice are unique.
+func Unique(values []string) bool {
+	seen := make(map[string]bool)
+	for _, value := range values {
+		if seen[value] {
+			return false
+		}
+		seen[value] = true
+	}
+	return true
 }

@@ -1,36 +1,23 @@
 package main
 
 import (
-	// "fmt"
-	// "net/http"
-	// "encoding/json"
 	"net/http"
 )
 
-//	func (a *applicationDependencies) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
-//		fmt.Fprintln(w, "status: available")
-//		fmt.Fprintf(w, "environment: %s\n", a.config.environment)
-//		fmt.Fprintf(w, "version: %s\n", appVersion)
-//	}
+// healthCheckHandler responds with basic information about the application status
 func (a *applicationDependencies) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	//panic("Apples & Oranges") 
-	data := envelope {
+	// Define the data to be returned in the response
+	data := envelope{
 		"status": "available",
 		"system_info": map[string]string{
 			"environment": a.config.environment,
 			"version":     appVersion,
 		},
 	}
-	//jsResponse, err := json.Marshal(data)
+
+	// Write JSON response with 200 OK status
 	err := a.writeJSON(w, http.StatusOK, data, nil)
 	if err != nil {
-		// a.logger.Error(err.Error())
-		// http.Error(w, "The server encountered a problem and could not process your request", http.StatusInternalServerError)
-		// return
 		a.serverErrorResponse(w, r, err)
 	}
-	// jsResponse = append(jsResponse, '\n')
-	// w.Header().Set("Content-Type", "application/json")
-	// w.Write(jsResponse)
-
 }

@@ -1,7 +1,8 @@
 package data
 
 import (
-	"context"
+	//"context"
+	 //"errors"
 	"database/sql"
 	"time"
 )
@@ -13,6 +14,7 @@ type User struct {
 	Email       string    `json:"email"`
 	Password    string    `json:"-"`
 	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 // UserModel handles the database interactions for users.
@@ -43,7 +45,7 @@ func (m *UserModel) Get(id int) (*User, error) {
 		&user.ID, &user.Username, &user.Email, &user.CreatedAt,
 	)
 	if err == sql.ErrNoRows {
-		return nil, ErrNoRecord
+		return nil, ErrRecordNotFound
 	}
 	return &user, err
 }
@@ -66,3 +68,38 @@ func (m *UserModel) Delete(id int) error {
 	_, err := m.DB.Exec(query, id)
 	return err
 }
+
+// // Get retrieves a user by ID.
+// func (m *UserModel) Get(id int64) (*User, error) {
+//     // SQL query to retrieve a user by ID
+//     query := `
+//         SELECT id, name, email, created_at, updated_at
+//         FROM users
+//         WHERE id = $1`
+
+//     // Initialize an empty User object to hold the result
+//     var user User
+
+//     // Context with a timeout for the query execution
+//     ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+//     defer cancel()
+
+//     // Execute the query and scan the result into the user struct
+//     err := m.DB.QueryRowContext(ctx, query, id).Scan(
+//         &user.ID,
+//         &user.Username,
+//         &user.Email,
+//         &user.CreatedAt,
+//         &user.UpdatedAt,
+//     )
+
+//     // Handle any errors that occur
+//     if err != nil {
+//         if errors.Is(err, sql.ErrNoRows) {
+//             return nil, ErrNoRecord
+//         }
+//         return nil, err
+//     }
+
+//     return &user, nil
+// }

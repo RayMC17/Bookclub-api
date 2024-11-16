@@ -13,7 +13,8 @@ import (
 )
 
 func (a *applicationDependencies) serve() error {
-		 apiServer := &http.Server{
+	// Define the HTTP server
+	apiServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", a.config.port),
 		Handler:      a.routes(),
 		IdleTimeout:  time.Minute,
@@ -21,44 +22,44 @@ func (a *applicationDependencies) serve() error {
 		WriteTimeout: 10 * time.Second,
 		ErrorLog:     slog.NewLogLogger(a.logger.Handler(), slog.LevelError),
 	}
-	// create a channel to keep track of any errors during the shutdown process
+
+	// Channel to capture shutdown errors
 	shutdownError := make(chan error)
-	// create a goroutine that runs in the background listening
-	// for the shutdown signals
+
+	// Start a background goroutine to handle graceful shutdown
 	go func() {
-		quit := make(chan os.Signal, 1)                      // receive the shutdown signal
-		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM) // signal occurred
-		s := <-quit                                          // blocks until a signal is received
-		// message about shutdown in process
+		// Create a channel to listen for interrupt/terminate signals
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		s := <-quit // Block until a signal is received
+
+		// Log the shutdown signal
 		a.logger.Info("shutting down server", "signal", s.String())
-		// create a context
+
+		// Create a context with a timeout for the shutdown process
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		// initiate the shutdown. If all okay returns nil
+		// Attempt to gracefully shutdown the server
 		shutdownError <- apiServer.Shutdown(ctx)
 	}()
 
+	// Start the server
 	a.logger.Info("starting server", "address", apiServer.Addr, "environment", a.config.environment)
-
-	// something went wrong during shutdown if we don't get ErrServerClosed()
-	// this only happens when we issue the shutdown command from our goroutine
-	// otherwise our server keeps running as normal as it should.
 	err := apiServer.ListenAndServe()
+
+	// Check if shutdown was due to an error
 	if !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
 
+	// Wait for graceful shutdown to complete
 	err = <-shutdownError
 	if err != nil {
-		 return err
-   }
-   // graceful shutdown was successful
-   a.logger.Info("stopped server", "address", apiServer.Addr)
- 
-   return nil
- 
- } 
-	// return apiServer.ListenAndServe()
+		return err
+	}
 
-
+	// Log successful server shutdown
+	a.logger.Info("stopped server", "address", apiServer.Addr)
+	return nil
+}
